@@ -621,7 +621,7 @@ bloodhound-python -d hokkaido-aerospace.com -u hrapp-service -p 'Untimed$Runny' 
 - Output compressed into `..._bloodhound.zip`
 - NTLM fallback used (Kerberos TGT failed — normal in some lab setups)
 
-**Docker BloodHound CE Setup** (as you did):
+**Docker BloodHound CE Setup**: [Install BloodHound CE on Kali Linux](https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62):
 
 ```bash
 docker-compose up -d
@@ -662,4 +662,3 @@ Paste:
 
 We'll add **Section 13: BloodHound Attack Path Execution** next (password reset, Kerberoast, etc.).
 
-Run the spray command if you haven't already — but since BloodHound is already collected and running, prioritize analyzing the graph for the next pivot. You're in the endgame now! 🚀
