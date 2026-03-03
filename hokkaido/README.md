@@ -4,8 +4,7 @@
 **IP**         : 192.168.128.40  
 **Domain**     : hokkaido-aerospace.com  
 **Difficulty** : Medium (community rated **Hard/Very Hard**) – heavy enumeration  
-**Lab Date**   : ~ March 2026  
-**OS**         : Windows Server 2022 (build ~20348 from nmap)  
+**OS**         : Windows Server 2022 
 **Goal**       : Domain Admin / SYSTEM flags
 
 ## 0. Setup / Hosts file
@@ -662,5 +661,13 @@ net rpc password "molly.smith" "Pass@123" -U 'hokkaido-aerospace.com'/'hazel.gre
 xfreerdp3 /u:molly.smith /p:'Pass@123' /drive:/tmp /dynamic-resolution /v:hokkaido
 ```
 <img width="807" height="36" alt="image" src="https://github.com/user-attachments/assets/a579022c-f11d-4f31-9bff-70db355bfbe3" />
+
+
+<img width="1919" height="971" alt="image" src="https://github.com/user-attachments/assets/f51ff8c3-bab2-4e78-95d1-80021ac7d5bb" />
+
+
+
+
+
 
 
