@@ -585,43 +585,54 @@ nxc smb 192.168.51.40 -u usernames.txt -p 'Untimed$Runny' --continue-on-success 
   - Shortest paths to Domain Admins
   - Users/groups/computers that `hrapp-service` can control (e.g. reset password on a user → Kerberoast → crack → RDP → priv esc)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+**Docker BloodHound-legecy Setup**: [Install BloodHound-Legecy](https://bloodhound.specterops.io/get-started/quickstart/community-edition-quickstart):
 
 ```bash
 bloodhound-python -d hokkaido-aerospace.com -u hrapp-service -p 'Untimed$Runny' -ns 192.168.51.40 -dc dc.hokkaido-aerospace.com -c All --zip
 ```
 <img width="1378" height="389" alt="image" src="https://github.com/user-attachments/assets/05c6548d-71c4-4e43-8ca0-da444316c795" />
 
-**Key results** (from your screenshot):
-- Found 1 domain, 2 computers, 34 users, 62 groups, 2 GPOs, 6 OUs, 0 trusts
-- Output compressed into `..._bloodhound.zip`
-- NTLM fallback used (Kerberos TGT failed — normal in some lab setups)
+### What This Means
+- **Success**: BloodHound collected **all** relevant AD objects using the `hrapp-service` credentials.
+- **Data size**: Small but complete lab (34 users, 62 groups, 2 computers = typical Hokkaido setup with DC + maybe 1 other machine).
+- **ZIP file**: `20260303062906_bloodhound.zip` (timestamp-based) — this is the file you need to upload to your BloodHound CE web interface.
+- No DNS timeout this time → the collection ran smoothly (likely because VPN stabilized or the query was fast enough).
 
-**Docker BloodHound CE Setup**: [Install BloodHound CE on Kali Linux](https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62):
+### Next Steps (Immediate Actions)
+1. **Upload the ZIP to BloodHound CE**
+   - Open your Docker instance: http://localhost:8080 (or whatever port you configured)
+   - Login (default: admin / admin)
+   - Go to **Upload Data** → drag & drop or select the ZIP file (`20260303062906_bloodhound.zip`)
+   - Wait for import to finish (usually quick for small labs like this)
+   - Refresh the database if prompted
+
+2. **Analyze in the UI** (this is where the magic happens)
+   - Search for the starting node: `HRAPP-SERVICE@HOKKAIDO-AEROSPACE.COM`
+   - Right-click → **Shortest Paths to Domain Admins** (or "Show paths from this node")
+   - Look specifically for:
+     - **ForceChangePassword** rights (allows password reset on a target user)
+     - **GenericWrite** / **GenericAll** on users, groups, or computers
+     - Any path involving **Hazel.Green**, **Molly.Smith**, or similar users (common in Hokkaido)
+   - Also run built-in queries:
+     - Shortest Paths to Domain Admins
+     - Principals with DCSync Rights
+     - Paths to High Value Targets
+
+### It seems we can use a targeted kerberoast against Hazel.Green
+`Installatiom`
+```bash
+git clone https://github.com/ShutdownRepo/targetedKerberoast.git
+cd targetedKerberoast
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+
+
+
+
+
 
 ```bash
 docker-compose up -d
@@ -661,4 +672,5 @@ Paste:
 - BloodHound findings (shortest path screenshot/description, any notable rights like ForceChangePassword on a user)
 
 We'll add **Section 13: BloodHound Attack Path Execution** next (password reset, Kerberoast, etc.).
+
 
