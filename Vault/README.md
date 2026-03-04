@@ -1,6 +1,8 @@
 AD-Lab / Active Directory / PG Vault
 
-scope - 192.168.51.172
+<img width="594" height="224" alt="image" src="https://github.com/user-attachments/assets/1ab863e8-8d90-4cef-ab19-8fa99d0a255c" />
+
+scope - 192.168.64.172
 
 
 first phase - recon
@@ -258,6 +260,7 @@ we’re gonna use rdesktop too:
 rdesktop 192.168.64.172
 ```
 <img width="1919" height="907" alt="image" src="https://github.com/user-attachments/assets/48228d77-f383-4eca-8674-7d88f2a53c25" />
+
 
 
 
