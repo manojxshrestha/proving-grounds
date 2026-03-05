@@ -145,4 +145,41 @@ my lab was lagging so i stopped it and start again : new lab ip: 192.168.59.40
 
 This gave us a bunch of info, I then tried to just RDP without creds and to my surprise it worked?
 
+<img width="961" height="603" alt="image" src="https://github.com/user-attachments/assets/b311ac08-1306-48bf-8a5e-35605389f163" />
+
+However we don’t have a password.
+
+Let’s enumerate further.
+5357/TCP - WSDAPI
+
+<img width="643" height="278" alt="image" src="https://github.com/user-attachments/assets/e6e6618e-8747-4b29-bdd8-d99d722c2c49" />
+
+<img width="895" height="532" alt="image" src="https://github.com/user-attachments/assets/7fdbeeb2-1cc6-4c49-9df7-6f0272f8673f" />
+
+
+
+    Port should be correctly mapped by the Windows Firewall to only accept connections from local network.
+
+Interesting…
+
+<img width="647" height="326" alt="image" src="https://github.com/user-attachments/assets/c75d1fe1-6aef-431e-a51e-ed5fa730fe3a" />
+
+
+Even more interesting!
+
+
+<img width="602" height="813" alt="image" src="https://github.com/user-attachments/assets/8fddaadb-c7f5-4287-8fa0-9e541f4e561f" />
+
+<img width="604" height="314" alt="image" src="https://github.com/user-attachments/assets/dd11f8b2-b261-45da-a111-a17820d4f4c8" />
+
+When looking for an exploit for this vulnerability we stumble across the exact same PoC we previously found:
+
+<img width="665" height="614" alt="image" src="https://github.com/user-attachments/assets/88c66619-a7c7-436e-94e4-7b4292399c4f" />
+
+Let’s grab the PoC from searchsploit.
+Initial Foothold
+
+The whole PoC is written in Python2 which we will have to adjust, as well as some other issues.
+
+Let’s start by examining it
 
